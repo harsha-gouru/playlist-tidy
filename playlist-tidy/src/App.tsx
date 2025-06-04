@@ -13,13 +13,16 @@ function App() {
   const { isAuthorized, isLoading, error } = useAuth();
   const { loadPlaylists, selectedId } = usePlaylistStore();
 
-  // Debug logging
-  console.log('App render:', { isAuthorized, isLoading, error, selectedId });
+
 
   // Load playlists when authorized
   useEffect(() => {
+    console.log('🎯 App useEffect triggered:', { isAuthorized, isLoading, error });
     if (isAuthorized) {
+      console.log('✅ User is authorized - loading playlists...');
       loadPlaylists();
+    } else {
+      console.log('❌ User not authorized - skipping playlist load');
     }
   }, [isAuthorized, loadPlaylists]);
 

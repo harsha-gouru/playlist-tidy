@@ -10,12 +10,15 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "generate-jwt": "node scripts/generate-jwt.cjs"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
     "@tanstack/react-table": "^8.21.3",
+    "@types/jsonwebtoken": "^9.0.9",
     "idb-keyval": "^6.2.2",
+    "jsonwebtoken": "^9.0.2",
     "msw": "^2.9.0",
     "openai": "^5.1.0",
     "react": "^19.1.0",

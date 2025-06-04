@@ -4,7 +4,8 @@
       "mcp__ide__getDiagnostics",
       "Bash(lsof:*)",
       "Bash(curl:*)",
-      "Bash(git init:*)"
+      "Bash(git init:*)",
+      "Bash(node:*)"
     ],
     "deny": []
   }

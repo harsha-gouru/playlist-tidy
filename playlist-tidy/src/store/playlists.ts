@@ -56,8 +56,22 @@ export const usePlaylistStore = create<PlaylistStore>()(
 
       // Actions
       loadPlaylists: async () => {
+        console.log('🏪 === PLAYLIST STORE: loadPlaylists called ===');
+        console.log('📍 Called from:', new Error().stack?.split('\n')[2]?.trim());
+        console.log('⏰ Timestamp:', new Date().toISOString());
+        
         try {
+          console.log('📞 Store calling appleMusicAPI.listPlaylists()...');
           const playlists = await appleMusicAPI.listPlaylists();
+          
+          console.log('✅ Store received playlists:', {
+            count: playlists.length,
+            firstPlaylist: playlists[0] ? {
+              id: playlists[0].id,
+              name: playlists[0].attributes?.name || 'no name'
+            } : 'no playlists'
+          });
+          
           const entities: Record<string, Playlist> = {};
           const order: string[] = [];
 
@@ -68,8 +82,10 @@ export const usePlaylistStore = create<PlaylistStore>()(
 
           set({ entities, order });
           get().createSnapshot('Loaded playlists from Apple Music');
+          
+          console.log('🏪 Store updated successfully with', playlists.length, 'playlists');
         } catch (error) {
-          console.error('Failed to load playlists:', error);
+          console.error('🏪 Store failed to load playlists:', error);
         }
       },
 

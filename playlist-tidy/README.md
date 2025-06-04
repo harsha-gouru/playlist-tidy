@@ -39,15 +39,67 @@ pnpm dev
 
 ### Apple Music Setup
 
-1. **Automatic Token Strategy** (Recommended)
-   - The app uses Apple's automatic developer token generation
-   - No manual JWT setup required
-   - Just authorize when prompted
+The app supports multiple authentication strategies:
 
-2. **Manual Token Setup** (Optional)
-   - Visit [Apple Developer Portal](https://developer.apple.com/account/)
-   - Create a Media Identifier and private key
-   - Generate JWT tokens manually if needed
+1. **Pre-generated JWT Token** (Recommended)
+   ```bash
+   VITE_APPLE_MUSIC_TOKEN=your_pre_generated_jwt_token_here
+   ```
+
+2. **Automatic Token Strategy** (Fallback)
+   - Uses Apple's automatic developer token generation
+   - May not work in local development environments
+
+#### Getting Your .p8 Private Key
+
+1. Go to [Apple Developer Portal](https://developer.apple.com/account/resources/authkeys/list)
+2. Create a new key with "MusicKit" service enabled
+3. Download the `.p8` file
+4. Copy the content between `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----` (excluding these lines)
+5. Paste this content as `VITE_APPLE_MUSIC_PRIVATE_KEY` in your `.env` file
+
+#### Getting Key ID and Team ID
+
+- **Key ID**: Found in the Apple Developer Portal when you view your key (10-character string)
+- **Team ID**: Found in your Apple Developer account membership details (10-character string)
+
+#### JWT Implementation Details
+
+This app implements proper Apple Music JWT generation with:
+
+✅ **ES256 Algorithm**: Uses ECDSA with SHA-256 (required by Apple)  
+✅ **Required Headers**: Includes `typ: 'JWT'` in header  
+✅ **Correct Payload**: Only includes Apple-supported claims (`iss`, `iat`, `exp`)  
+✅ **Proper Key Handling**: Correctly parses ECDSA private keys  
+✅ **180-Day Expiration**: Maximum allowed by Apple  
+
+#### JWT Generation Script
+
+For convenience, you can use the included script to generate JWT tokens:
+
+```bash
+# Generate JWT from .p8 file
+pnpm generate-jwt ./path/to/AuthKey_ABC123DEFG.p8 ABC123DEFG DEF456GHIJ
+
+# Or use node directly
+node scripts/generate-jwt.cjs ./path/to/AuthKey_ABC123DEFG.p8 ABC123DEFG DEF456GHIJ
+```
+
+The script will:
+- Generate a properly signed JWT token
+- Validate the token structure
+- Show token details and expiration
+- Provide the exact environment variable to add to your `.env` file
+- Give you a curl command to test the token
+
+#### Testing Your JWT Token
+
+You can test your generated token with Apple's API:
+
+```bash
+curl -v -H "Authorization: Bearer YOUR_TOKEN" \
+"https://api.music.apple.com/v1/catalog/us/songs/203709340"
+```
 
 ## 🎯 Usage
 
@@ -141,8 +193,9 @@ pnpm test --watch
 # Required for AI features
 VITE_OPENAI_API_KEY=your_openai_api_key_here
 
-# Optional: Manual Apple Music token
-VITE_APPLE_MUSIC_TOKEN=your_apple_music_token_here
+# Apple Music API Configuration
+# Use a pre-generated JWT token (generate using the script below)
+VITE_APPLE_MUSIC_TOKEN=your_pre_generated_jwt_token_here
 ```
 
 ### Apple Music API

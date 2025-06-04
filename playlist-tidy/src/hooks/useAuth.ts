@@ -24,10 +24,13 @@ export function useAuth() {
       
       await appleMusicAPI.initialize();
       
+      const isAuthorized = appleMusicAPI.isAuthorized;
+      console.log('🔄 useAuth: Setting initial state after initialization', { isAuthorized });
+      
       setState(prev => ({
         ...prev,
         isLoading: false,
-        isAuthorized: appleMusicAPI.isAuthorized,
+        isAuthorized,
         music: appleMusicAPI.musicInstance,
         storefront: appleMusicAPI.userStorefront
       }));

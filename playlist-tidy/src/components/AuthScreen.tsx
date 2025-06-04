@@ -8,12 +8,12 @@ export default function AuthScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center" style={{minHeight: '100vh'}}>
+      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8" style={{maxWidth: '28rem', width: '100%', margin: '0 1rem'}}>
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mb-6">
-            <svg className="h-8 w-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          <div className="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mb-6" style={{width: '64px', height: '64px', maxWidth: '64px', maxHeight: '64px'}}>
+            <svg className="h-8 w-8 text-white" fill="currentColor" viewBox="0 0 24 24" style={{width: '32px', height: '32px', maxWidth: '32px', maxHeight: '32px'}}>
+              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
             </svg>
           </div>
           
