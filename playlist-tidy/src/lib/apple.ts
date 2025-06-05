@@ -106,9 +106,9 @@ class AppleMusicAPI {
       throw new Error(`Failed to configure Apple Music: ${error instanceof Error ? error.message : String(error)}`);
     }
 
-    // Set default storefront
+    // Set default storefront (will be updated after authorization)
     this.storefront = 'us';
-    console.log('🌍 Using default storefront: US (will update after user authorization)');
+    console.log('🌍 Using default storefront: US (will detect actual storefront after authorization)');
   }
 
   private authorizationInProgress = false;
@@ -297,26 +297,32 @@ class AppleMusicAPI {
           await this.handlePrivacyAcknowledgement();
         }
         
-        // Get user's actual storefront after successful authorization
-        try {
-          // Try different methods to get storefront
-          let storefrontResponse;
-          if (this.music.api.library?.storefront) {
-            storefrontResponse = await this.music.api.library.storefront();
-          } else if (this.music.api.music?.session) {
-            storefrontResponse = await this.music.api.music.session.request({
-              url: '/v1/me/storefront',
-              method: 'GET'
-            });
-          } else {
-            throw new Error('No storefront access method available');
-          }
-          
-          this.storefront = storefrontResponse.data[0].id;
-          console.log('🌍 Updated storefront to:', this.storefront);
-        } catch (error) {
-          console.warn('Could not get user storefront, keeping default US:', error);
+        // ENHANCED VALIDATION FLOW
+        console.log('🔍 === ENHANCED AUTHORIZATION VALIDATION ===');
+        
+        // 1. Verify and refresh Music-User-Token
+        const tokenValid = await this.verifyAndRefreshUserToken();
+        if (!tokenValid) {
+          console.error('❌ Music-User-Token validation failed');
+          return false;
         }
+        
+        // 2. Validate authorization scopes
+        const scopesValid = await this.validateAuthorizationScopes();
+        if (!scopesValid) {
+          console.error('❌ Authorization scope validation failed');
+          return false;
+        }
+        
+        // 3. Validate subscription status
+        const subscriptionValid = await this.validateSubscription();
+        if (!subscriptionValid) {
+          console.error('❌ Apple Music subscription validation failed');
+          throw new Error('Apple Music subscription required. Please ensure you have an active Apple Music subscription to access your music library and playlists.');
+        }
+        
+        // 4. Get user's actual storefront after successful authorization
+        await this.updateUserStorefront();
         
         console.log('✅ Authorization and API initialization complete');
         return true;
@@ -383,14 +389,28 @@ class AppleMusicAPI {
         authorizationStatus: this.music?.authorizationStatus,
         isConfigured: !!window.MusicKit?.getInstance
       });
-      console.log('❌ User not authorized - throwing error');
+      console.log('❌ User not authorized - running enhanced validation...');
       
-      // Check if it's a subscription issue specifically
-      if (this.music?.authorizationStatus === 3 && this.music?.isAuthorized && !this.music?.api?.library) {
-        throw new Error('Apple Music subscription required. Please ensure you have an active Apple Music subscription to access your music library and playlists.');
+      // Run enhanced validation to provide specific error messages
+      try {
+        if (this.music) {
+          // Check if basic authorization exists but library access is missing
+          if (this.music.authorizationStatus === 3 && this.music.isAuthorized) {
+            if (!this.music.api?.library) {
+              throw new Error('Apple Music subscription required. Please ensure you have an active Apple Music subscription to access your music library and playlists.');
+            }
+            
+            // Check if Music-User-Token is missing
+            if (!this.music.musicUserToken) {
+              throw new Error('Authentication failed. Please try disconnecting and reconnecting your Apple Music account.');
+            }
+          }
+        }
+      } catch (validationError) {
+        throw validationError;
       }
       
-      throw new Error('User not authorized for Apple Music');
+      throw new Error('User not authorized for Apple Music. Please connect your Apple Music account.');
     }
 
     console.log('🌍 Environment Details:', {
@@ -605,17 +625,45 @@ class AppleMusicAPI {
         errorStack: error instanceof Error ? error.stack : 'no stack'
       });
 
-      // Provide specific error message for subscription issues
+      // Enhanced error handling with region and subscription detection
       if (error instanceof Error) {
         const errorMessage = error.message.toLowerCase();
+        const errorStatus = (error as any)?.status;
+        
+        // Subscription-related errors
         if (errorMessage.includes('failed to fetch') || 
             errorMessage.includes('cannot read properties of undefined') ||
-            errorMessage.includes('library')) {
+            errorMessage.includes('library') ||
+            errorStatus === 403) {
           throw new Error('Apple Music subscription required. Unable to access your music library. Please ensure you have an active Apple Music subscription.');
+        }
+        
+        // Region/country restriction errors
+        if (errorMessage.includes('not available in your country') ||
+            errorMessage.includes('region') ||
+            errorMessage.includes('country') ||
+            errorMessage.includes('storefront') ||
+            errorStatus === 451) {
+          throw new Error(`Apple Music service may not be available in your region (${this.storefront}). Please check if Apple Music is supported in your country.`);
+        }
+        
+        // Token/authentication errors
+        if (errorMessage.includes('unauthorized') ||
+            errorMessage.includes('token') ||
+            errorStatus === 401) {
+          throw new Error('Authentication failed. Please try disconnecting and reconnecting your Apple Music account.');
+        }
+        
+        // Network/connectivity errors
+        if (errorMessage.includes('network') ||
+            errorMessage.includes('timeout') ||
+            errorMessage.includes('connection') ||
+            errorStatus >= 500) {
+          throw new Error('Network error. Please check your internet connection and try again.');
         }
       }
 
-      throw new Error(`All playlist fetch attempts failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Unable to access Apple Music library: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -793,7 +841,7 @@ class AppleMusicAPI {
     console.log('Test 9 - Apple Music app and device status...');
     console.log('Device info:', {
       userAgent: navigator.userAgent,
-      platform: navigator.platform,
+      userAgentData: (navigator as any).userAgentData?.platform || 'not available',
       language: navigator.language,
       cookieEnabled: navigator.cookieEnabled,
       onLine: navigator.onLine
@@ -1164,6 +1212,195 @@ class AppleMusicAPI {
 
       checkMusicKit();
     });
+  }
+
+  // Update user's actual storefront after authorization
+  private async updateUserStorefront(): Promise<void> {
+    console.log('🌍 Detecting user\'s actual storefront...');
+    
+    try {
+      let storefrontResponse;
+      
+      // Try multiple methods to get storefront
+      if (this.music.api.library?.storefront) {
+        console.log('📍 Using library.storefront() method...');
+        storefrontResponse = await this.music.api.library.storefront();
+      } else if (this.music.api.music) {
+        console.log('📍 Using direct API call to /v1/me/storefront...');
+        storefrontResponse = await this.music.api.music('/v1/me/storefront');
+      } else {
+        throw new Error('No storefront access method available');
+      }
+      
+      if (storefrontResponse?.data?.[0]?.id) {
+        const newStorefront = storefrontResponse.data[0].id;
+        console.log('🌍 Detected user storefront:', {
+          previous: this.storefront,
+          detected: newStorefront,
+          country: storefrontResponse.data[0].attributes?.name
+        });
+        this.storefront = newStorefront;
+      } else {
+        console.warn('⚠️ Storefront response missing expected data structure:', storefrontResponse);
+      }
+    } catch (error) {
+      console.warn('❌ Could not detect user storefront, keeping default:', {
+        error: error instanceof Error ? error.message : String(error),
+        defaultStorefront: this.storefront
+      });
+    }
+  }
+
+  // Validate subscription status
+  private async validateSubscription(): Promise<boolean> {
+    console.log('💳 Validating Apple Music subscription...');
+    
+    try {
+      // Check subscription status from MusicKit instance
+      const subscriptionStatus = this.music?.subscriptionStatus;
+      console.log('📊 Subscription status from MusicKit:', subscriptionStatus);
+      
+      // Also try to get subscription info from API
+      try {
+        const subscriptionResponse = await this.music.api.music('/v1/me/subscription');
+        console.log('📊 Subscription info from API:', subscriptionResponse);
+      } catch (apiError) {
+        console.log('ℹ️ Subscription API call failed (may not be available):', apiError);
+      }
+      
+      // Test library access as subscription indicator
+      try {
+        await this.music.api.music('/v1/me/library/playlists', { limit: 1 });
+        console.log('✅ Library access test passed - subscription appears active');
+        return true;
+      } catch (libraryError) {
+        console.log('❌ Library access test failed:', {
+          error: libraryError instanceof Error ? libraryError.message : String(libraryError),
+          status: (libraryError as any)?.status
+        });
+        
+        // Check if it's a subscription-related error
+        if ((libraryError as any)?.status === 403) {
+          console.log('🚨 403 Forbidden - likely subscription issue');
+          return false;
+        }
+        
+        // For other errors, assume subscription is valid but there's another issue
+        return true;
+      }
+    } catch (error) {
+      console.error('❌ Subscription validation failed:', error);
+      return false;
+    }
+  }
+
+  // Verify and refresh Music-User-Token
+  private async verifyAndRefreshUserToken(): Promise<boolean> {
+    console.log('🔑 Verifying Music-User-Token...');
+    
+    const token = this.music.musicUserToken;
+    console.log('🔍 Current token state:', {
+      hasToken: !!token,
+      tokenLength: token?.length || 0,
+      tokenPreview: token ? `${token.substring(0, 20)}...` : 'missing'
+    });
+    
+    if (!token) {
+      console.log('⚠️ Music-User-Token is missing, attempting to refresh...');
+      
+      try {
+        // Force token refresh by re-accessing the property
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const refreshedToken = this.music.musicUserToken;
+        
+        if (refreshedToken) {
+          console.log('✅ Token refresh successful:', {
+            tokenLength: refreshedToken.length,
+            tokenPreview: `${refreshedToken.substring(0, 20)}...`
+          });
+          return true;
+        } else {
+          console.log('❌ Token refresh failed - still missing');
+          return false;
+        }
+      } catch (error) {
+        console.error('❌ Token refresh error:', error);
+        return false;
+      }
+    }
+    
+    // Test token validity by making a simple API call
+    try {
+      await this.music.api.music('/v1/me/storefront');
+      console.log('✅ Music-User-Token validation successful');
+      return true;
+    } catch (error) {
+      console.log('❌ Music-User-Token validation failed:', {
+        error: error instanceof Error ? error.message : String(error),
+        status: (error as any)?.status
+      });
+      
+      if ((error as any)?.status === 401) {
+        console.log('🔑 401 Unauthorized - token may be expired or invalid');
+        return false;
+      }
+      
+      return true; // Assume token is valid for other error types
+    }
+  }
+
+  // Enhanced authorization scope validation
+  private async validateAuthorizationScopes(): Promise<boolean> {
+    console.log('🔐 Validating authorization scopes...');
+    
+    // Check basic authorization state
+    const basicAuth = this.music.isAuthorized && this.music.authorizationStatus === 3;
+    console.log('📋 Basic authorization check:', {
+      isAuthorized: this.music.isAuthorized,
+      authStatus: this.music.authorizationStatus,
+      passed: basicAuth
+    });
+    
+    if (!basicAuth) {
+      console.log('❌ Basic authorization check failed');
+      return false;
+    }
+    
+    // Test specific scope access
+    const scopeTests = [
+      {
+        name: 'User Identity',
+        test: () => this.music.api.music('/v1/me/storefront')
+      },
+      {
+        name: 'Library Access',
+        test: () => this.music.api.music('/v1/me/library/playlists', { limit: 1 })
+      }
+    ];
+    
+    const results = [];
+    for (const scopeTest of scopeTests) {
+      try {
+        await scopeTest.test();
+        console.log(`✅ ${scopeTest.name} scope: PASSED`);
+        results.push(true);
+      } catch (error) {
+        console.log(`❌ ${scopeTest.name} scope: FAILED`, {
+          error: error instanceof Error ? error.message : String(error),
+          status: (error as any)?.status
+        });
+        results.push(false);
+      }
+    }
+    
+    const allPassed = results.every(r => r);
+    console.log('📊 Scope validation summary:', {
+      userIdentity: results[0],
+      libraryAccess: results[1],
+      allPassed
+    });
+    
+    return allPassed;
   }
 
   // Wait for music API to be available after authorization
