@@ -29,6 +29,7 @@ jobs:
     - name: Build
       env:
         VITE_APPLE_MUSIC_TOKEN: ${{ secrets.APPLE_MUSIC_TOKEN }}
+        VITE_OPENAI_API_KEY: ${{ secrets.VITE_OPENAI_API_KEY }}
       run: |
         cd playlist-tidy
         npm run build
