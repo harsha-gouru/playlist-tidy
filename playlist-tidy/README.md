@@ -2,6 +2,8 @@
 
 A **local-first** web app that helps you declutter and organize your Apple Music playlists with AI assistance. Built with React, TypeScript, and Tailwind CSS.
 
+🔗 **Live Demo:** [https://harsha-gouru.github.io/playlist-tidy/](https://harsha-gouru.github.io/playlist-tidy/)
+
 ## 🚨 Important: Apple Music Subscription Required
 
 **Playlist Tidy requires an active Apple Music subscription** to function properly. Here's why:
