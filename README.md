@@ -1,4 +1,4 @@
-hh# Apple Playlist Enhance
+# Apple Playlist Enhance
 
 This repository contains **Playlist Tidy v0.1** - a local-first web app for organizing Apple Music playlists with AI assistance.
 
