@@ -55,7 +55,12 @@ function generateJWT() {
     // Generate the JWT token with origin claim for web security
     const payload = {
       // Add origin claim for web security (restricts token to specific domains)
-      origin: ['http://localhost:5174', 'http://localhost:5173', 'https://yourdomain.com']
+      origin: [
+        'http://localhost:5173',
+        'http://localhost:5174', 
+        'https://localhost:5173',
+        'https://harsha-gouru.github.io'
+      ]
     };
     
     const jwtToken = jwt.sign(payload, privateKey, {
