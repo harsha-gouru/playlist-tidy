@@ -148,7 +148,7 @@ export async function callAI(payload: AIPayload): Promise<AIResult> {
 }
 
 async function processAIResponse(
-  mode: string,
+  _mode: string,
   functionName: string,
   args: any,
   originalTracks: Track[]

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateJWTFormat, decodeJWT, isJWTExpired, getTokenExpirationInfo } from '../lib/jwt-browser';
+import { validateJWTFormat, decodeJWT, isJWTExpired } from '../lib/jwt-browser';
 import { generateAppleMusicJWT } from '../lib/jwt';
 
 describe('Apple Music JWT Generation', () => {

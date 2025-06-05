@@ -1,4 +1,4 @@
-import type { Playlist, Track, CatalogTrack, SearchResult, Mutation } from '../types';
+import type { Playlist, Track, CatalogTrack, Mutation } from '../types';
 import { isJWTExpired, getTokenExpirationInfo } from './jwt-browser';
 
 declare global {
@@ -10,8 +10,8 @@ declare global {
 class AppleMusicAPI {
   private music: any = null;
   private storefront: string = '';
-  private isInitializing: boolean = false;
-  private initializationPromise: Promise<void> | null = null;
+  // private isInitializing: boolean = false;
+  // private initializationPromise: Promise<void> | null = null;
   private privacyAcknowledged: boolean = false;
 
   async initialize(): Promise<void> {
@@ -926,7 +926,7 @@ class AppleMusicAPI {
     }
   }
 
-  async moveTrack(playlistId: string, trackId: string, fromIndex: number, toIndex: number): Promise<void> {
+  async moveTrack(_playlistId: string, _trackId: string, _fromIndex: number, _toIndex: number): Promise<void> {
     // Note: Apple Music API doesn't have direct move operation
     // This would require removing and re-adding at specific position
     // For now, we'll implement this as a client-side operation

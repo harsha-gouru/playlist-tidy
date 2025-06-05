@@ -31,14 +31,14 @@ interface PlaylistStore extends PlaylistState {
 
 // Custom persist storage using IndexedDB
 const storage = {
-  getItem: async (name: string): Promise<string | null> => {
+  getItem: async (name: string) => {
     const value = await get(name);
     return value || null;
   },
-  setItem: async (name: string, value: string): Promise<void> => {
+  setItem: async (name: string, value: string) => {
     await set(name, value);
   },
-  removeItem: async (name: string): Promise<void> => {
+  removeItem: async (name: string) => {
     await set(name, undefined);
   },
 };
@@ -326,13 +326,15 @@ export const usePlaylistStore = create<PlaylistStore>()(
     }),
     {
       name: 'playlist-store',
-      storage,
+      storage: storage as any,
       partialize: (state) => ({
         entities: state.entities,
         order: state.order,
         history: state.history,
-        historyIndex: state.historyIndex
-      })
+        historyIndex: state.historyIndex,
+        selectedId: state.selectedId,
+        isDirty: state.isDirty
+      }) as any
     }
   )
 ); 

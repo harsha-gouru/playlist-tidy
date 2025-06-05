@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { usePlaylistStore } from '../store/playlists';
 import { callAI } from '../ai';
-import type { Track } from '../types';
+// import type { Track } from '../types';
 
 interface PlaylistEditorProps {
   playlistId: string;
@@ -178,7 +178,7 @@ export default function PlaylistEditor({ playlistId }: PlaylistEditorProps) {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {tracks.map((track, index) => (
+                  {tracks.map((track) => (
                     <tr
                       key={track.id}
                       className={`hover:bg-gray-50 ${
