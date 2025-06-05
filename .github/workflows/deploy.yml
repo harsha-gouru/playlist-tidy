@@ -27,6 +27,8 @@ jobs:
         npm ci
         
     - name: Build
+      env:
+        VITE_APPLE_MUSIC_TOKEN: ${{ secrets.APPLE_MUSIC_TOKEN }}
       run: |
         cd playlist-tidy
         npm run build
