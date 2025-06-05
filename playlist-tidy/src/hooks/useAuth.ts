@@ -18,7 +18,17 @@ export function useAuth() {
     storefront: ''
   });
 
+  const [initializationStarted, setInitializationStarted] = useState(false);
+
   const initialize = useCallback(async () => {
+    if (initializationStarted) {
+      console.log('🔄 useAuth: Initialization already started, skipping...');
+      return;
+    }
+
+    setInitializationStarted(true);
+    console.log('🔄 useAuth: Starting initialization...');
+
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
       
@@ -41,9 +51,15 @@ export function useAuth() {
         error: error instanceof Error ? error.message : 'Failed to initialize Apple Music'
       }));
     }
-  }, []);
+  }, [initializationStarted]);
 
   const authorize = useCallback(async () => {
+    // Prevent multiple rapid authorization attempts
+    if (state.isLoading) {
+      console.log('🔄 useAuth: Authorization already in progress, skipping...');
+      return state.isAuthorized;
+    }
+
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
       
@@ -66,7 +82,7 @@ export function useAuth() {
       }));
       return false;
     }
-  }, []);
+  }, [state.isLoading, state.isAuthorized]);
 
   const unauthorize = useCallback(() => {
     if (state.music) {
@@ -85,23 +101,36 @@ export function useAuth() {
     initialize();
   }, [initialize]);
 
-  // Listen for authorization changes
+  // Listen for authorization changes (with debouncing)
   useEffect(() => {
     if (state.music) {
+      let timeoutId: NodeJS.Timeout;
+      
       const handleAuthorizationStatusDidChange = (event: any) => {
-        setState(prev => ({
-          ...prev,
-          isAuthorized: event.authorizationStatus === 3 // MusicKit.AuthorizationStatus.authorized
-        }));
+        console.log('🔄 useAuth: Authorization status changed:', event.authorizationStatus);
+        
+        // Debounce the state update to prevent rapid changes
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          const newIsAuthorized = event.authorizationStatus === 3;
+          if (newIsAuthorized !== state.isAuthorized) {
+            console.log('🔄 useAuth: Updating authorization state:', newIsAuthorized);
+            setState(prev => ({
+              ...prev,
+              isAuthorized: newIsAuthorized
+            }));
+          }
+        }, 500); // 500ms debounce
       };
 
       state.music.addEventListener('authorizationStatusDidChange', handleAuthorizationStatusDidChange);
 
       return () => {
+        clearTimeout(timeoutId);
         state.music.removeEventListener('authorizationStatusDidChange', handleAuthorizationStatusDidChange);
       };
     }
-  }, [state.music]);
+  }, [state.music, state.isAuthorized]);
 
   return {
     ...state,

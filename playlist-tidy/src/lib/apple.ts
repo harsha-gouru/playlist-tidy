@@ -111,30 +111,43 @@ class AppleMusicAPI {
     console.log('🌍 Using default storefront: US (will update after user authorization)');
   }
 
+  private authorizationInProgress = false;
+
   async authorize(): Promise<boolean> {
-    console.log('🔐 Starting Apple Music authorization...');
-    
-    if (!this.music) {
-      console.log('🔄 Music instance not found, re-initializing...');
-      await this.initialize(); 
-      if (!this.music) {
-        console.error('❌ Music instance still not available after re-initialization attempt. Cannot authorize.');
-        return false;
+    // Prevent multiple simultaneous authorization attempts
+    if (this.authorizationInProgress) {
+      console.log('⏳ Authorization already in progress, waiting...');
+      let attempts = 0;
+      while (this.authorizationInProgress && attempts < 30) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        attempts++;
       }
+      return this.isAuthorized;
     }
 
+    this.authorizationInProgress = true;
+    console.log('🔐 Starting Apple Music authorization...');
+    
     try {
-      // Note: Privacy acknowledgement will be handled AFTER authorization and API readiness
+      if (!this.music) {
+        console.log('🔄 Music instance not found, re-initializing...');
+        await this.initialize(); 
+        if (!this.music) {
+          console.error('❌ Music instance still not available after re-initialization attempt. Cannot authorize.');
+          return false;
+        }
+      }
 
-      // Stricter check: ensure library API is also available if we think we are authorized
+      // Comprehensive authorization check
       const isFullyReady = 
         this.music.isAuthorized && 
         this.music.api?.music && 
         this.music.api?.library && 
-        this.music.authorizationStatus === 3;
+        this.music.authorizationStatus === 3 &&
+        this.music.musicUserToken;
 
       if (isFullyReady) {
-        console.log('✅ Already authorized with working music AND library API. No need to re-authorize.');
+        console.log('✅ Already fully authorized with working APIs and user token. No need to re-authorize.');
         return true;
       }
       
@@ -143,17 +156,18 @@ class AppleMusicAPI {
         hasMusicAPI: !!this.music.api?.music,
         hasLibraryAPI: !!this.music.api?.library,
         authorizationStatus: this.music.authorizationStatus,
+        hasUserToken: !!this.music.musicUserToken,
         isFullyReady: isFullyReady,
         privacyAcknowledged: this.privacyAcknowledged
       });
 
-      // If we have stale authorization, reset it
-      if (this.music.isAuthorized && !isFullyReady) {
-        console.log('🔄 Stale or incomplete authorization detected. Resetting...');
+      // Only reset authorization if it's clearly broken (status !== 3)
+      if (this.music.isAuthorized && this.music.authorizationStatus !== 3) {
+        console.log('🔄 Broken authorization detected (status !== 3). Resetting...');
         try {
           await this.music.unauthorize();
           console.log('✅ Successfully called unauthorize(). Waiting briefly...');
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Give more time to settle
+          await new Promise(resolve => setTimeout(resolve, 1000));
         } catch (unauthError) {
           console.error('❌ Error during unauthorize():', unauthError);
         }
@@ -320,6 +334,8 @@ class AppleMusicAPI {
         });
       }
       return false;
+    } finally {
+      this.authorizationInProgress = false;
     }
   }
 
