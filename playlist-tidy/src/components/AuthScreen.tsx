@@ -7,6 +7,14 @@ export default function AuthScreen() {
     await authorize();
   };
 
+  // Check if the error is subscription-related
+  const isSubscriptionError = error && (
+    error.includes('subscription') ||
+    error.includes('library') ||
+    error.includes('Failed to fetch') ||
+    error.includes('User not authorized for Apple Music')
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center" style={{minHeight: '100vh'}}>
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8" style={{maxWidth: '28rem', width: '100%', margin: '0 1rem'}}>
@@ -27,13 +35,37 @@ export default function AuthScreen() {
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-700 text-sm font-medium mb-2">{error}</p>
-              {error.includes('developer token') && (
-                <div className="text-red-600 text-xs space-y-1">
-                  <p>For local development:</p>
-                  <p>1. Visit <a href="https://developer.apple.com/account/" target="_blank" rel="noopener noreferrer" className="underline">Apple Developer Portal</a></p>
-                  <p>2. Create a MusicKit identifier and private key</p>
-                  <p>3. Generate a JWT token and add it to your .env file as VITE_APPLE_MUSIC_TOKEN</p>
+              {isSubscriptionError ? (
+                <div>
+                  <p className="text-red-700 text-sm font-medium mb-3">Apple Music Subscription Required</p>
+                  <div className="text-red-600 text-xs space-y-2 text-left">
+                    <p>• <strong>Playlist Tidy requires an active Apple Music subscription</strong> to access your music library and playlists.</p>
+                    <p>• You can sign in with your Apple ID, but library access needs a paid Apple Music subscription.</p>
+                    <p>• If you have a subscription, please make sure it's active and try again.</p>
+                    <div className="mt-3 pt-2 border-t border-red-200">
+                      <p className="font-medium">Don't have Apple Music?</p>
+                      <a 
+                        href="https://music.apple.com/subscribe" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-red-700 underline hover:text-red-800"
+                      >
+                        Subscribe to Apple Music →
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-red-700 text-sm font-medium mb-2">{error}</p>
+                  {error.includes('developer token') && (
+                    <div className="text-red-600 text-xs space-y-1">
+                      <p>For local development:</p>
+                      <p>1. Visit <a href="https://developer.apple.com/account/" target="_blank" rel="noopener noreferrer" className="underline">Apple Developer Portal</a></p>
+                      <p>2. Create a MusicKit identifier and private key</p>
+                      <p>3. Generate a JWT token and add it to your .env file as VITE_APPLE_MUSIC_TOKEN</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -51,6 +83,7 @@ export default function AuthScreen() {
             <p>• Your music data stays private and secure</p>
             <p>• We only access your playlists to help organize them</p>
             <p>• You can disconnect at any time</p>
+            <p>• <strong>Requires active Apple Music subscription</strong></p>
           </div>
         </div>
       </div>

@@ -2,6 +2,23 @@
 
 A **local-first** web app that helps you declutter and organize your Apple Music playlists with AI assistance. Built with React, TypeScript, and Tailwind CSS.
 
+## 🚨 Important: Apple Music Subscription Required
+
+**Playlist Tidy requires an active Apple Music subscription** to function properly. Here's why:
+
+- ✅ **Apple ID Authentication**: You can sign in with any Apple ID
+- ❌ **Library Access**: Accessing your music library and playlists requires a paid Apple Music subscription
+- 🎵 **Apple's Requirement**: This is an Apple Music API limitation, not a Playlist Tidy restriction
+
+**If you don't have Apple Music:**
+- [Subscribe to Apple Music](https://music.apple.com/subscribe) to use Playlist Tidy
+- The app will show a helpful error message if subscription is missing
+
+**If you have Apple Music but still get errors:**
+- Ensure your subscription is active and not expired
+- Try signing out and back into the Music app on your device
+- Check that your Apple ID has the subscription associated with it
+
 ## ✨ Features
 
 - **🎵 Apple Music Integration** - Connect with automatic developer token generation
@@ -17,7 +34,7 @@ A **local-first** web app that helps you declutter and organize your Apple Music
 ### Prerequisites
 
 - Node.js 18+ and pnpm
-- Apple Music subscription
+- **Apple Music subscription** (required)
 - OpenAI API key (for AI features)
 
 ### Installation
@@ -105,10 +122,11 @@ curl -v -H "Authorization: Bearer YOUR_TOKEN" \
 
 ### Getting Started
 
-1. **Connect Apple Music** - Authorize the app to access your music library
-2. **Browse Playlists** - View all your playlists in the sidebar
-3. **Select & Edit** - Click a playlist to start organizing tracks
-4. **Use AI Features** - Generate names, group tracks, or get recommendations
+1. **Ensure Apple Music Subscription** - Verify you have an active subscription
+2. **Connect Apple Music** - Authorize the app to access your music library
+3. **Browse Playlists** - View all your playlists in the sidebar
+4. **Select & Edit** - Click a playlist to start organizing tracks
+5. **Use AI Features** - Generate names, group tracks, or get recommendations
 
 ### AI Features
 
